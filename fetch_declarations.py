@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This Python file uses the following encoding: utf-8
 
-import urllib2
+import urllib2, sys, re
 from BeautifulSoup import BeautifulSoup
 
 full_list_url = 'http://w1.c1.rada.gov.ua/pls/site2/fetch_mps?skl_id=9'
@@ -15,16 +15,17 @@ def soupize(url):
 
 def read_deps(url_list):
 	soup = soupize(url_list)
-	print "-- parsing titles"
+	print "-- parsing titles", name
 	for p in soup.findAll(name = 'p', attrs = {'class': 'title'}):
   		a = p.find('a')
 
-		if a.get('href').startswith(info_page_prefix):
-			dep_id = a.get('href').split('/')[-1]
-			dep_name = a.text
-			yield (dep_id, dep_name)
-		else:
+		if not a.get('href').startswith(info_page_prefix):
 			print 'Bad link format', a.get('href'), a.text
+			continue
+
+		dep_id = a.get('href').split('/')[-1]
+		dep_name = a.text
+		yield (dep_name, dep_id)
 
 
 def read_decl(dep_id, year = 2015):
@@ -42,8 +43,20 @@ def read_decl(dep_id, year = 2015):
 	else:
 		return 0, 0, decl_page_url
 
-print "-- fetching list"
-for x in read_deps(full_list_url):
-	got_legacy = read_decl(x[0])
-	if got_legacy and filter(bool, got_legacy[:2]):
-		print x[1], x[0], "own: %s, family: %s |src %s" % (got_legacy)
+def decl_out(personal, heritage):
+		print "%s (%s)|" % personal, "own: %s, family: %s |src %s" % (heritage)
+
+deps = []
+if sys.argv[1:]:
+	name = sys.argv[1].decode('utf-8')
+	for x in read_deps(full_list_url):
+		if x[0].find(name) > -1:
+			decl_out(x, read_decl(x[1]))
+
+else:
+	print "-- fetching list"
+	for x in read_deps(full_list_url):
+		got_legacy = read_decl(x[1])
+		if got_legacy and filter(bool, got_legacy[:2]):
+			decl_out(x, got_legacy)
+
