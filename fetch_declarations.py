@@ -15,7 +15,7 @@ def soupize(url):
 
 def read_deps(url_list):
 	soup = soupize(url_list)
-	print "-- parsing titles", name
+	print "-- parsing titles"
 	for p in soup.findAll(name = 'p', attrs = {'class': 'title'}):
   		a = p.find('a')
 
